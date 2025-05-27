@@ -60,7 +60,7 @@ app.post('/song', async (req, res) => {
                 params: {
                     q: query,
                     type: 'track',
-                    limit: 10
+                    limit: 50
                 }
             }
         );
