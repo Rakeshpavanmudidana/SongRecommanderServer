@@ -41,7 +41,7 @@ app.post('/song', async (request, response) => {
         params: {
             q: mood,
             type: 'track',
-            limit: 5
+            limit: 20
         }
     });
 
