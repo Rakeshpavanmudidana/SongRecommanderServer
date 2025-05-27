@@ -14,16 +14,17 @@ let tokenExpiresAt = 0;
 async function getAccessToken() {
     if (Date.now() < tokenExpiresAt) return accessToken;
 
-    const response = await axios(
-        'https://accounts.spotify.com/api/token',
-        new URLSearchParams({ grant_type: 'client_credentials' }),
-        {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Authorization': `Basic ${Buffer.from(process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET).toString('base64')}`
-            }
+    const response = await axios.post(
+    'https://accounts.spotify.com/api/token',
+    new URLSearchParams({ grant_type: 'client_credentials' }).toString(),
+    {
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Basic ${Buffer.from(process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET).toString('base64')}`
         }
+    }
     );
+
 
     accessToken = response.data.access_token;
     tokenExpiresAt = Date.now() + response.data.expires_in * 1000;
