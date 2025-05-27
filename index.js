@@ -31,27 +31,57 @@ async function getAccessToken() {
     return accessToken;
 }
 
-app.post('/song', async (request, response) => {
-    const { mood } = request.body;
+app.post('/song', async (req, res) => {
+  const { mood, language, year } = req.body;
 
-    const token = await getAccessToken(); // Added await here
+  const moodMap = {
+    happy: "party",
+    calm: "chill",
+    rock: "rock",
+    acoustic: "acoustic",
+    chill: "rainy",
+    pop: "pop"
+  };
 
-    const search = await axios('https://api.spotify.com/v1/search', {
-        headers: { Authorization: `Bearer ${token}` },
+  const queryMood = moodMap[mood] || 'pop';
+
+  // Construct Spotify search query
+  let query = `genre:${queryMood}`;
+  if (year) query += ` year:${year}`;
+  if (language) query += ` ${language}`; // May work for Hindi, Telugu, etc.
+
+  try {
+    const token = await getAccessToken();
+
+    const response = await axios.get(
+      `https://api.spotify.com/v1/search`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
         params: {
-            q: mood,
-            type: 'track',
-            limit: 20
+          q: query,
+          type: 'track',
+          limit: 10
         }
-    });
+      }
+    );
 
-    const songs = search.data.tracks.items.map(track => ({
-        name: track.name,
-        artist: track.artists.map(a => a.name).join(', '),
-        preview_url: track.preview_url,
-        image: track.album.images[0]?.url,
-        spotify_url: track.external_urls.spotify
+    const songs = response.data.tracks.items.map(track => ({
+      name: track.name,
+      artist: track.artists.map(a => a.name).join(", "),
+      image: track.album.images[0]?.url || '',
+      preview_url: track.preview_url,
+      spotify_url: track.external_urls.spotify
     }));
+
+    res.json(songs);
+  } catch (err) {
+    console.error("Spotify error:", err.message);
+    res.status(500).json({ error: "Failed to fetch songs from Spotify" });
+  }
+});
+
 
     response.json(songs);
 });
