@@ -1,6 +1,6 @@
 const express = require('express');
 const axios = require('axios');
-const corse = require('corse');
+const corse = require('cors');
 require('dotenv').config();
 
 const app = express();
