@@ -1,22 +1,24 @@
 const express = require('express');
 const axios = require('axios');
-const corse = require('cors');
+const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
-app.use(corse());
+app.use(cors());
+app.use(express.json()); // Added to parse JSON body
 const PORT = 3000;
 
 let accessToken = '';
 let tokenExpiresAt = 0;
 
 async function getAccessToken() {
-    if ( Date.now() < tokenExpiresAt) return accessToken;
+    if (Date.now() < tokenExpiresAt) return accessToken;
 
-    const response = await axios( 'https://accounts.spotify.com/api/token', 
-        new URLSearchParams( { grant_type: 'client_credentials' }),
+    const response = await axios(
+        'https://accounts.spotify.com/api/token',
+        new URLSearchParams({ grant_type: 'client_credentials' }),
         {
-            headers:{
+            headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'Authorization': `Basic ${Buffer.from(process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET).toString('base64')}`
             }
@@ -28,34 +30,29 @@ async function getAccessToken() {
     return accessToken;
 }
 
-app.get('/song/:mood', async(request, response ) => {
-    const mood = request.params.mood;
+app.post('/song', async (request, response) => {
+    const { mood } = request.body;
 
-    const token = getAccessToken();
+    const token = await getAccessToken(); // Added await here
 
-    const search = await axios('https://api.spotify.com/v1/search',{
+    const search = await axios('https://api.spotify.com/v1/search', {
         headers: { Authorization: `Bearer ${token}` },
         params: {
             q: mood,
             type: 'track',
             limit: 5
         }
-    }
-    );
+    });
 
     const songs = search.data.tracks.items.map(track => ({
-    name: track.name,
-    artist: track.artist,
-    preview_url: track.preview_url,
-    image: track.album.image[0].url,
-    spotify_url: track.external_urls.spotify
-}));
+        name: track.name,
+        artist: track.artists.map(a => a.name).join(', '),
+        preview_url: track.preview_url,
+        image: track.album.images[0]?.url,
+        spotify_url: track.external_urls.spotify
+    }));
 
     response.json(songs);
 });
 
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
-
-
-
-
